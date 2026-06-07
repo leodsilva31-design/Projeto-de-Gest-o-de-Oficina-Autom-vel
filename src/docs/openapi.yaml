@@ -1,0 +1,480 @@
+openapi: 3.0.0
+
+info:
+  title: API Oficina Automóvel
+  description: API para autenticação de mecânicos/gestores e gestão do catálogo de serviços da oficina.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000/api
+    description: Servidor local
+
+tags:
+  - name: Auth
+    description: Endpoints de autenticação
+  - name: Services
+    description: Endpoints do catálogo de serviços
+  - name: Interventions
+    description: Endpoints de gestão de intervenções
+  - name: Statistics
+    description: Endpoints de estatísticas da oficina
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Registar novo mecânico ou gestor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  example: David Cabral
+                email:
+                  type: string
+                  example: david@oficina.pt
+                password:
+                  type: string
+                  example: Password123
+                role:
+                  type: string
+                  enum:
+                    - mecanico
+                    - gestor
+                  example: mecanico
+      responses:
+        "201":
+          description: Utilizador criado com sucesso
+          content:
+            application/json:
+              example:
+                message: Utilizador criado
+                mechanic:
+                  _id: 665f1c2b7a1b2c3d4e5f6789
+                  name: David Cabral
+                  email: david@oficina.pt
+                  role: mecanico
+        "400":
+          description: Email já existe ou dados inválidos
+          content:
+            application/json:
+              example:
+                message: Email já existe
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login de mecânico ou gestor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  example: david@oficina.pt
+                password:
+                  type: string
+                  example: Password123
+      responses:
+        "200":
+          description: Login efetuado com sucesso
+          content:
+            application/json:
+              example:
+                message: Login efetuado
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        "400":
+          description: Password inválida
+          content:
+            application/json:
+              example:
+                message: Password inválida
+        "404":
+          description: Utilizador não encontrado
+          content:
+            application/json:
+              example:
+                message: Utilizador não encontrado
+
+  /auth/profile:
+    get:
+      tags:
+        - Auth
+      summary: Consultar perfil do utilizador autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Perfil devolvido com sucesso
+        "401":
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              example:
+                message: Token não fornecido
+
+  /services:
+    get:
+      tags:
+        - Services
+      summary: Listar todos os serviços
+      description: Devolve todos os serviços da oficina.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de serviços devolvida com sucesso
+          content:
+            application/json:
+              example:
+                count: 2
+                services:
+                  - _id: 665f1c2b7a1b2c3d4e5f1111
+                    name: Mudança de Óleo
+                    description: Substituição do óleo do motor e verificação do filtro.
+                    estimated_time: 45
+                  - _id: 665f1c2b7a1b2c3d4e5f2222
+                    name: Diagnóstico
+                    description: Diagnóstico eletrónico do veículo.
+                    estimated_time: 30
+        "401":
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              example:
+                message: Token não fornecido
+
+    post:
+      tags:
+        - Services
+      summary: Criar novo serviço
+      description: Cria um novo tipo de reparação no catálogo da oficina.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - description
+                - estimated_time
+              properties:
+                name:
+                  type: string
+                  example: Mudança de Óleo
+                description:
+                  type: string
+                  example: Substituição do óleo do motor e verificação do filtro.
+                estimated_time:
+                  type: number
+                  example: 45
+      responses:
+        "201":
+          description: Serviço criado com sucesso
+          content:
+            application/json:
+              example:
+                message: Serviço criado com sucesso.
+                service:
+                  _id: 665f1c2b7a1b2c3d4e5f1111
+                  name: Mudança de Óleo
+                  description: Substituição do óleo do motor e verificação do filtro.
+                  estimated_time: 45
+        "400":
+          description: Dados obrigatórios em falta
+          content:
+            application/json:
+              example:
+                message: Nome, descrição e tempo estimado são obrigatórios.
+        "401":
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              example:
+                message: Token não fornecido
+        "409":
+          description: Serviço duplicado
+          content:
+            application/json:
+              example:
+                message: Já existe um serviço com este nome.
+
+  /services/{id}:
+    get:
+      tags:
+        - Services
+      summary: Consultar serviço por ID
+      description: Devolve os dados de um serviço específico.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do serviço
+          schema:
+            type: string
+          example: 665f1c2b7a1b2c3d4e5f1111
+      responses:
+        "200":
+          description: Serviço encontrado
+          content:
+            application/json:
+              example:
+                _id: 665f1c2b7a1b2c3d4e5f1111
+                name: Mudança de Óleo
+                description: Substituição do óleo do motor e verificação do filtro.
+                estimated_time: 45
+        "401":
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              example:
+                message: Token não fornecido
+        "404":
+          description: Serviço não encontrado
+          content:
+            application/json:
+              example:
+                message: Serviço não encontrado.
+
+    put:
+      tags:
+        - Services
+      summary: Atualizar serviço por ID
+      description: Atualiza os dados de um serviço existente.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do serviço
+          schema:
+            type: string
+          example: 665f1c2b7a1b2c3d4e5f1111
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: Mudança de Óleo e Filtro
+                description:
+                  type: string
+                  example: Substituição do óleo do motor e do filtro de óleo.
+                estimated_time:
+                  type: number
+                  example: 60
+      responses:
+        "200":
+          description: Serviço atualizado com sucesso
+          content:
+            application/json:
+              example:
+                message: Serviço atualizado com sucesso.
+                service:
+                  _id: 665f1c2b7a1b2c3d4e5f1111
+                  name: Mudança de Óleo e Filtro
+                  description: Substituição do óleo do motor e do filtro de óleo.
+                  estimated_time: 60
+        "401":
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              example:
+                message: Token não fornecido
+        "404":
+          description: Serviço não encontrado
+          content:
+            application/json:
+              example:
+                message: Serviço não encontrado.
+
+    delete:
+      tags:
+        - Services
+      summary: Apagar serviço por ID
+      description: Remove um serviço do catálogo da oficina.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID do serviço
+          schema:
+            type: string
+          example: 665f1c2b7a1b2c3d4e5f1111
+      responses:
+        "200":
+          description: Serviço eliminado com sucesso
+          content:
+            application/json:
+              example:
+                message: Serviço eliminado com sucesso.
+        "401":
+          description: Token não fornecido ou inválido
+          content:
+            application/json:
+              example:
+                message: Token não fornecido
+        "404":
+          description: Serviço não encontrado
+          content:
+            application/json:
+              example:
+                message: Serviço não encontrado.
+  /interventions:
+    get:
+      tags:
+        - Interventions
+      summary: Listar todas as intervenções
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de intervenções devolvida com sucesso
+
+    post:
+      tags:
+        - Interventions
+      summary: Criar intervenção
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - mechanic_id
+                - service_id
+                - date
+                - duration
+      responses:
+        "201":
+          description: Intervenção criada com sucesso
+
+  /interventions/{id}:
+    get:
+      tags:
+        - Interventions
+      summary: Consultar intervenção por ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Intervenção encontrada
+
+    put:
+      tags:
+        - Interventions
+      summary: Atualizar intervenção
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Intervenção atualizada
+
+    delete:
+      tags:
+        - Interventions
+      summary: Eliminar intervenção
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Intervenção eliminada
+
+  /stats/interventions-total:
+    get:
+      tags:
+        - Statistics
+      summary: Total de intervenções
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Total devolvido com sucesso
+
+  /stats/top-services:
+    get:
+      tags:
+        - Statistics
+      summary: Serviços mais utilizados
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Estatísticas devolvidas com sucesso
+
+  /stats/service-time:
+    get:
+      tags:
+        - Statistics
+      summary: Tempo total por serviço
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Estatísticas devolvidas com sucesso
+
+  /stats/streaks:
+    get:
+      tags:
+        - Statistics
+      summary: Estatísticas de intervenções
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Estatísticas devolvidas com sucesso
+          
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
